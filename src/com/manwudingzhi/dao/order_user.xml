@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <!DOCTYPE mapper 
+  PUBLIC "-//mybatis.org//DTD Mapper .//EN"
+   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.manwudingzhi.dao.order_user">
+
+	<resultMap type="orders" id="ordersAndUsersInfo">
+		<id property="id" column="id" />
+		<result property="user_id" column="user_id" />
+		<result property="number" column="number" />
+		<result property="createtime" column="createtime" />
+		<result property="note" column="note" />
+		<association property="user" resultMap="users"></association>
+		<collection property="orderdetails" ofType="orderDetail"
+			resultMap="orderdetail"></collection>
+
+	</resultMap>
+
+	<resultMap type="user" id="users">
+		<id property="id" column="id" />
+		<result property="username" column="username" />
+		<result property="birthday" column="birthday" javaType="Date"
+			jdbcType="DATE" />
+		<result property="sex" column="sex" />
+		<result property="address" column="address" />
+		<collection property="ordersList" ofType="orders"></collection>
+	</resultMap>
+
+	<resultMap type="orderDetail" id="orderdetail">
+		<id property="id" column="orderdetail_id" />
+		<result property="ordersId" column="orders_id" />
+		<result property="items_id" column="items_id" />
+		<result property="items_nums" column="items_num" />
+		<collection property="items" ofType="items">
+			<id column="items_id" property="id" />
+			<result column="itemsname" property="itmesname" />
+			<result column="detail" property="detail" />
+			<result column="price" property="price" />
+			<result column="pic" property="pic" />
+			<result column="createtime" property="createtime" />
+
+		</collection>
+	</resultMap>
+
+
+
+	<!-- 查询订单，关联查询用户信息，使用resultMap实现 -->
+	<select id="selectorder" parameterType="orders" resultMap="ordersAndUsersInfo"
+		resultOrdered="true">
+		SELECT t1.*,
+		t2.username,
+		t2.birthday,
+		t2.sex,
+		t2.address
+		FROM
+		orders t1,
+		t_user t2
+		WHERE t1.user_id=t2.id
+		<if test=" user_id !=null and user_id !=0 ">
+			and t1.user_id = ${user_id}
+		</if>
+
+	</select>
+
+	<!-- 查询订单(关联用户)及订单明细 -->
+	<select id="selectorderAndInfo" parameterType="orders"
+		resultMap="ordersAndUsersInfo">
+		SELECT
+
+		detail.id orderdetail_id,
+		detail.orders_id,
+		detail.items_id,
+		detail.items_num,
+		user.username,
+		user.birthday,
+		user.sex,
+		user.address,
+		t1.*
+
+		FROM
+		orders t1,
+		t_user user,
+		orderdetail detail
+		WHERE t1.user_id =
+		user.id AND detail.orders_id=t1.id
+		<if test="user_id !=null and user_id !=0 ">
+			and t1.id =${id}
+		</if>
+		order by orderdetail_id
+
+	</select>
+
+
+	<!-- 查询用户及用户购买的商品信息，使用resulaMap -->
+	<select id="findUserAndItemsResultMap" resultMap="ordersAndUsersInfo">
+		SELECT
+		t1.*,
+		t2.username,
+		t2.sex,
+		t2.address,
+		t3.id orderdetail_id,
+		t3.items_id,
+		t3.items_num,
+		t3.orders_id,
+		t4.itemsname ,
+		t4.detail ,
+		t4.price,
+		t4.createtime
+		FROM
+		orders t1,
+		t_user t2,
+		orderdetail t3,
+		items t4
+		WHERE t1.user_id = t2.id AND t3.orders_id=t1.id AND t3.items_id = t4.id
+	</select>
+	
+	
+	<!-- 增加一个订单 -->
+	 <insert id="insertOneOrder" parameterType="orders" useGeneratedKeys="true" keyProperty="id">
+		insert into  orders(user_id,number,createtime,note) values (#{user_id},#{number},#{createtime},#{note})
+	</insert> 
+	
+	<!-- 增加一个订单明细 -->
+	<insert id="insertOneOrderDetail" parameterType="orderDetail" >
+		insert into  orderdetail(orders_id,items_id,items_num) values (#{ordersId},#{items_id},#{items_nums})
+	</insert>
+
+
+</mapper>
